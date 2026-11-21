@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>shibno</title>
+<meta name="description" content="shibnoのサイト。ブログと、作ったもの。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Zen+Kaku+Gothic+New:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="frame">
+
+  <header class="top">
+    <a class="mark" href="index.html">shibno</a>
+    <nav aria-label="サイト内">
+      <a href="blog/index.html">ブログ</a>
+      <a href="works/index.html">作ったもの</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-text">
+      <h1>shibno</h1>
+      <p>音楽と数学と、ときどき作ったもの。更新は年に1回くらいです。</p>
+    </div>
+    <figure class="clock">
+      <svg viewBox="0 0 400 400" role="img" aria-label="12音の円。n を 7−n に移す鏡映で結んだ6本の線は、すべて平行になる。">
+      <circle class="ring" cx="200" cy="200" r="150"/>
+      <line class="axis" x1="356.5" y1="241.9" x2="43.5" y2="158.1"/>
+      <line class="chord" x1="200.0" y1="50.0" x2="125.0" y2="329.9"/>
+      <line class="chord" x1="275.0" y1="70.1" x2="200.0" y2="350.0"/>
+      <line class="chord" x1="329.9" y1="125.0" x2="275.0" y2="329.9"/>
+      <line class="chord" x1="350.0" y1="200.0" x2="329.9" y2="275.0"/>
+      <line class="chord" x1="70.1" y1="275.0" x2="125.0" y2="70.1"/>
+      <line class="chord" x1="50.0" y1="200.0" x2="70.1" y2="125.0"/>
+      <circle class="dot" cx="200.0" cy="50.0" r="2.6"/>
+      <text x="200.0" y="28.0">C</text>
+      <circle class="dot" cx="275.0" cy="70.1" r="2.6"/>
+      <text x="286.0" y="51.0">C♯</text>
+      <circle class="dot" cx="329.9" cy="125.0" r="2.6"/>
+      <text x="349.0" y="114.0">D</text>
+      <circle class="dot" cx="350.0" cy="200.0" r="2.6"/>
+      <text x="372.0" y="200.0">E♭</text>
+      <circle class="dot" cx="329.9" cy="275.0" r="2.6"/>
+      <text x="349.0" y="286.0">E</text>
+      <circle class="dot" cx="275.0" cy="329.9" r="2.6"/>
+      <text x="286.0" y="349.0">F</text>
+      <circle class="dot" cx="200.0" cy="350.0" r="2.6"/>
+      <text x="200.0" y="372.0">F♯</text>
+      <circle class="dot" cx="125.0" cy="329.9" r="2.6"/>
+      <text x="114.0" y="349.0">G</text>
+      <circle class="dot" cx="70.1" cy="275.0" r="2.6"/>
+      <text x="51.0" y="286.0">A♭</text>
+      <circle class="dot" cx="50.0" cy="200.0" r="2.6"/>
+      <text x="28.0" y="200.0">A</text>
+      <circle class="dot" cx="70.1" cy="125.0" r="2.6"/>
+      <text x="51.0" y="114.0">B♭</text>
+      <circle class="dot" cx="125.0" cy="70.1" r="2.6"/>
+      <text x="114.0" y="51.0">B</text>
+      </svg>
+      <figcaption>n ↦ 7 − n (mod 12)　ネガティブハーモニーの鏡映</figcaption>
+    </figure>
+  </section>
+
+  <main>
+    <ul class="index">
+      <li><a href="blog/index.html"><span class="name">ブログ</span><span class="note">年1回くらい</span><span class="desc">いまはlivedoorから引っ越し中です。</span></a></li>
+      <li><a href="works/index.html"><span class="name">作ったもの</span><span class="note">1件</span><span class="desc">コード進行ガチャなど、思いついて作った小さな道具。</span></a></li>
+    </ul>
+  </main>
+
+  <footer class="foot">
+    <span>© 2026 shibno</span>
+    <span>前のブログ <a href="https://shibno.blog.jp/">shibno.blog.jp</a></span>
+  </footer>
+
+</div>
+</body>
+</html>

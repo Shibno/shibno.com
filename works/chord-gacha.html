@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>コード進行ガチャ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2f8; --ink:#18233d; --sub:#5b6a85; --board:#1f2e52; --board-ink:#eef3fb;
+  --fret:#a9b8cc; --inlay:#e9e2cf; --pick:#f0b93a; --pick-ink:#2a1d00; --line:#c9d3e2; --hl:#f0b93a;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1628; --ink:#e6ecf6; --sub:#9aa8c0; --board:#22335c; --board-ink:#f1f5fc;
+    --fret:#7f91ad; --inlay:#cfc6ae; --pick:#f0b93a; --pick-ink:#2a1d00; --line:#2c3a5a; --hl:#f0b93a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1628; --ink:#e6ecf6; --sub:#9aa8c0; --board:#22335c; --board-ink:#f1f5fc;
+  --fret:#7f91ad; --inlay:#cfc6ae; --pick:#f0b93a; --pick-ink:#2a1d00; --line:#2c3a5a; --hl:#f0b93a;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  line-height:1.6;
+}
+main{max-width:760px; margin:0 auto; padding:28px 20px 48px}
+h1{font-size:clamp(1.9rem,6vw,2.6rem); font-weight:900; letter-spacing:.02em; margin:0 0 4px; line-height:1.2}
+.lead{color:var(--sub); margin:0 0 22px; font-size:.95rem}
+
+.controls{display:flex; flex-wrap:wrap; gap:12px 18px; margin-bottom:22px}
+.controls label{display:flex; flex-direction:column; font-size:.82rem; color:var(--sub); gap:4px}
+select{
+  font:inherit; font-size:1rem; color:var(--ink); background:transparent;
+  border:1.5px solid var(--line); border-radius:8px; padding:8px 10px; min-width:120px;
+}
+select:focus-visible,button:focus-visible{outline:3px solid var(--hl); outline-offset:2px}
+
+.prog-name{font-size:1.15rem; font-weight:700; margin:0}
+.prog-hint{color:var(--sub); margin:2px 0 14px; font-size:.92rem; min-height:1.5em}
+
+/* fretboard strip */
+.board{
+  background:var(--board); color:var(--board-ink); border-radius:6px;
+  display:grid; grid-template-columns:repeat(4,1fr);
+  overflow:hidden; position:relative;
+}
+.board::before,.board::after{ /* strings */
+  content:""; position:absolute; left:0; right:0; height:1px; background:rgba(255,255,255,.12); pointer-events:none;
+}
+.board::before{top:30%} .board::after{top:70%}
+.chord{
+  all:unset; cursor:pointer; position:relative; text-align:center;
+  padding:26px 6px 22px; border-right:3px solid var(--fret);
+  display:flex; flex-direction:column; align-items:center; gap:6px; min-height:120px; justify-content:center;
+}
+.chord:nth-child(4n){border-right:none}
+.chord:nth-child(n+5){border-top:2px solid rgba(255,255,255,.15)}
+.chord .name{font-size:clamp(1.5rem,6.5vw,2.4rem); font-weight:900; line-height:1}
+.chord .deg{font-size:.85rem; opacity:.7}
+.chord .dot{position:absolute; bottom:8px; width:8px; height:8px; border-radius:50%; background:var(--inlay); opacity:.85}
+.chord.playing{background:rgba(240,185,58,.22)}
+.chord.twisted .name{color:var(--pick)}
+.chord:focus-visible{outline:3px solid var(--hl); outline-offset:-3px}
+
+.actions{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 8px}
+button.act{
+  font:inherit; font-weight:700; font-size:1rem; cursor:pointer;
+  border:1.5px solid var(--line); background:transparent; color:var(--ink);
+  border-radius:999px; padding:10px 18px;
+}
+button.pick{
+  background:var(--pick); color:var(--pick-ink); border-color:var(--pick);
+  border-radius:50% 50% 50% 50% / 38% 38% 62% 62%; /* pick shape */
+  padding:14px 30px 18px; font-size:1.15rem;
+}
+button.act:active{transform:translateY(1px)}
+.tempo{display:flex; align-items:center; gap:8px; color:var(--sub); font-size:.85rem; margin-top:6px}
+.tempo input{accent-color:var(--pick)}
+.status{color:var(--sub); font-size:.85rem; min-height:1.4em; margin:4px 0 0}
+
+section.saved{margin-top:36px; border-top:1.5px solid var(--line); padding-top:18px}
+section.saved h2{font-size:1.05rem; margin:0 0 10px}
+.saved ul{list-style:none; padding:0; margin:0}
+.saved li{display:flex; justify-content:space-between; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line)}
+.saved .s-chords{font-weight:700; font-size:1.05rem; overflow-wrap:anywhere}
+.saved .s-meta{color:var(--sub); font-size:.8rem}
+.saved .s-btns{display:flex; gap:6px; flex-shrink:0}
+.saved .s-btns button{font:inherit; font-size:.82rem; background:transparent; color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:4px 8px; cursor:pointer}
+.empty{color:var(--sub); font-size:.9rem}
+
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<main>
+  <h1>コード進行ガチャ</h1>
+  <p class="lead">引いて、鳴らして、気に入ったらとっておく。作曲のネタ集めに。</p>
+
+  <div class="controls">
+    <label>キー
+      <select id="key"></select>
+    </label>
+    <label>雰囲気
+      <select id="mood">
+        <option value="any">おまかせ</option>
+        <option value="bright">明るい</option>
+        <option value="sad">切ない</option>
+        <option value="chic">おしゃれ</option>
+        <option value="random">完全ランダム</option>
+      </select>
+    </label>
+  </div>
+
+  <p class="prog-name" id="progName"></p>
+  <p class="prog-hint" id="progHint"></p>
+
+  <div class="board" id="board" aria-label="コード進行。各コードを押すと鳴ります"></div>
+
+  <div class="actions">
+    <button class="act pick" id="draw">引く</button>
+    <button class="act" id="twist">ひねる</button>
+    <button class="act" id="play">通して鳴らす</button>
+    <button class="act" id="save">とっておく</button>
+  </div>
+  <div class="tempo">
+    <label for="bpm">テンポ</label>
+    <input type="range" id="bpm" min="60" max="140" value="88">
+    <span id="bpmVal">88</span>
+  </div>
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <section class="saved">
+    <h2>とっておいたネタ</h2>
+    <ul id="savedList"></ul>
+  </section>
+</main>
+
+<script>
+(() => {
+  const KEYS = ['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+  const SHARP = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+  const FLAT  = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+  const FLAT_KEYS = new Set([1,3,5,8,10]);
+
+  const Q = { '':[0,4,7], 'm':[0,3,7], '7':[0,4,7,10], 'M7':[0,4,7,11], 'm7':[0,3,7,10],
+              'm7(♭5)':[0,3,6,10], 'sus4':[0,5,7], 'add9':[0,4,7,14], 'm9':[0,3,7,10,14] };
+
+  // degree tokens: [semitones, quality, roman]
+  const D = {
+    I:[0,'','I'], ii:[2,'m','IIm'], iii:[4,'m','IIIm'], IV:[5,'','IV'], V:[7,'','V'], vi:[9,'m','VIm'],
+    bVII:[10,'','♭VII'], bVI:[8,'','♭VI'], III7:[4,'7','III7'], IVM7:[5,'M7','IVM7'], vim7:[9,'m7','VIm7'],
+    Vm7:[7,'m7','Vm7'], I7:[0,'7','I7'], iim7:[2,'m7','IIm7'], V7:[7,'7','V7'], IM7:[0,'M7','IM7'],
+    iiim7:[4,'m7','IIIm7'], ivm:[5,'m','IVm'], Vsus4:[7,'sus4','Vsus4'], II7:[2,'7','II7'], VI7:[9,'7','VI7']
+  };
+
+  const PROGS = [
+    {name:'王道進行', mood:'sad', hint:'J-POPのサビで定番。胸がぎゅっとなる流れ。', seq:['IV','V','iii','vi']},
+    {name:'カノン進行', mood:'bright', hint:'パッヘルベルのカノン由来。8小節で物語が一周する。', seq:['I','V','vi','iii','IV','I','IV','V']},
+    {name:'小室進行', mood:'sad', hint:'マイナーから始まる疾走感。90年代J-POPの香り。', seq:['vi','IV','V','I']},
+    {name:'Just The Two Of Us進行', mood:'chic', hint:'いわゆる丸サ進行。シティポップのおしゃれさ。', seq:['IVM7','III7','vim7','Vm7','I7']},
+    {name:'循環進行', mood:'chic', hint:'ジャズ由来の、何周でも回せる進行。', seq:['IM7','vim7','iim7','V7']},
+    {name:'Axis進行', mood:'bright', hint:'洋楽ヒットの大定番。メロディを乗せやすい。', seq:['I','V','vi','IV']},
+    {name:'50s進行', mood:'bright', hint:'オールディーズの甘い響き。', seq:['I','vi','IV','V']},
+    {name:'切ないAxis', mood:'sad', hint:'Axisをマイナーから。同じ4つでも景色が変わる。', seq:['vi','IV','I','V']},
+    {name:'ロック風ミクソリディアン', mood:'bright', hint:'♭VIIで抜ける、ロックらしい開放感。', seq:['I','bVII','IV','I']},
+    {name:'エピック進行', mood:'sad', hint:'♭VI→♭VIIで一気に盛り上がる。', seq:['vi','bVI','bVII','I']},
+    {name:'サブドミナントマイナー', mood:'chic', hint:'IVmの一瞬の陰りがエモい。', seq:['I','IV','ivm','I']},
+    {name:'ツーファイブ寄り道', mood:'chic', hint:'II7で寄り道してから帰ってくる。', seq:['IM7','II7','iim7','V7']},
+    {name:'J-POP Aメロ定番', mood:'bright', hint:'穏やかに始まって、サビへの助走をつける。', seq:['I','iii','IV','V']},
+    {name:'泣きの下降', mood:'sad', hint:'ベースが下りていくと切なさが増す。', seq:['I','V','vi','V','IV','I','IV','V']},
+  ];
+
+  const $ = id => document.getElementById(id);
+  const keySel = $('key'), moodSel = $('mood'), board = $('board');
+  KEYS.forEach((k,i) => { const o=document.createElement('option'); o.value=i; o.textContent=k; keySel.appendChild(o); });
+
+  let state = { key: 0, name:'', hint:'', chords:[] }; // chords: {deg, twisted}
+
+  const rand = a => a[Math.floor(Math.random()*a.length)];
+
+  function chordName(tok, key){
+    const [st,q] = tok;
+    const pc = (key + st) % 12;
+    const names = FLAT_KEYS.has(key) || st===10 || st===8 ? FLAT : SHARP;
+    return names[pc] + q;
+  }
+
+  function randomProg(){
+    const pool = ['I','ii','iii','IV','V','vi'];
+    const start = rand(['I','vi','IV']);
+    const seq = [start];
+    while(seq.length<4){
+      const next = rand(pool.filter(x => x!==seq[seq.length-1]));
+      seq.push(next);
+    }
+    if (Math.random()<.5) seq[3] = rand(['V','IV']);
+    return {name:'ランダム', hint:'ダイアトニックからの完全ランダム。意外な当たりが出るかも。', seq};
+  }
+
+  function draw(){
+    const mood = moodSel.value;
+    let p;
+    if (mood==='random') p = randomProg();
+    else {
+      const pool = mood==='any' ? PROGS : PROGS.filter(x => x.mood===mood);
+      let tries = 0;
+      do { p = rand(pool); tries++; } while (p.name===state.name && pool.length>1 && tries<10);
+    }
+    state.key = Number(keySel.value);
+    state.name = p.name; state.hint = p.hint;
+    state.chords = p.seq.map(d => ({tok:[...D[d]], twisted:false}));
+    render();
+    setStatus('');
+  }
+
+  const TWISTS = {
+    '': ['7','sus4','add9','M7'], 'm': ['m7','m9'], 'M7':['add9'], 'm7':['m9'], '7':['sus4']
+  };
+  function twist(){
+    const cands = state.chords.map((c,i)=>i).filter(i => TWISTS[state.chords[i].tok[1]]);
+    if (!cands.length){ setStatus('これ以上ひねれるコードがありません'); return; }
+    const i = rand(cands);
+    const c = state.chords[i];
+    const before = chordName(c.tok, state.key);
+    const nq = rand(TWISTS[c.tok[1]]);
+    c.tok = [c.tok[0], nq, c.tok[2].replace(/(m7\(♭5\)|m9|m7|M7|sus4|add9|7|m)?$/, '') + (nq==='m' ? 'm' : nq)];
+    c.twisted = true;
+    render();
+    setStatus(`${before} を ${chordName(c.tok, state.key)} にひねりました`);
+    playChord(c.tok, 0);
+    flash(i, 900);
+  }
+
+  function render(){
+    $('progName').textContent = state.name ? `${state.name}（キー ${KEYS[state.key]}）` : '「引く」でスタート';
+    $('progHint').textContent = state.hint;
+    board.innerHTML = '';
+    state.chords.forEach((c,i) => {
+      const b = document.createElement('button');
+      b.className = 'chord' + (c.twisted ? ' twisted' : '');
+      b.setAttribute('aria-label', `${chordName(c.tok, state.key)} を鳴らす`);
+      b.innerHTML = `<span class="name"></span><span class="deg"></span>${[2,4,6].includes(i%8)?'<span class="dot"></span>':''}`;
+      b.querySelector('.name').textContent = chordName(c.tok, state.key);
+      b.querySelector('.deg').textContent = c.tok[2];
+      b.addEventListener('click', () => { playChord(c.tok, 0); flash(i, 700); });
+      board.appendChild(b);
+    });
+  }
+
+  function flash(i, ms){
+    const el = board.children[i]; if(!el) return;
+    el.classList.add('playing'); setTimeout(()=>el.classList.remove('playing'), ms);
+  }
+
+  // ---- audio ----
+  let ctx = null;
+  function ac(){ if(!ctx){ ctx = new (window.AudioContext||window.webkitAudioContext)(); } if(ctx.state==='suspended') ctx.resume(); return ctx; }
+  const freq = m => 440 * Math.pow(2,(m-69)/12);
+
+  function voicing(tok){
+    const [st,q] = tok;
+    const pc = (state.key + st) % 12;
+    const root = 40 + ((pc - 4 + 12) % 12); // E2..D#3
+    const iv = Q[q] || Q[''];
+    const notes = [root];
+    iv.forEach(x => notes.push(root + 12 + x));
+    if (iv.length===3) notes.push(root + 24);
+    return notes;
+  }
+
+  function pluck(m, t, dur, gainAmt){
+    const c = ac();
+    const o1 = c.createOscillator(), o2 = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+    o1.type='triangle'; o2.type='sawtooth';
+    o1.frequency.value = freq(m); o2.frequency.value = freq(m)*1.002;
+    f.type='lowpass'; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(700, t+dur);
+    const g2 = c.createGain(); g2.gain.value = .25;
+    o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(f); f.connect(c.destination);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gainAmt, t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o1.start(t); o2.start(t); o1.stop(t+dur+.05); o2.stop(t+dur+.05);
+  }
+
+  function playChord(tok, offset){
+    const c = ac();
+    const t0 = c.currentTime + .03 + offset;
+    voicing(tok).forEach((m,i) => pluck(m, t0 + i*0.022, 1.8, 0.12));
+  }
+
+  let playing = false;
+  function playAll(){
+    if (!state.chords.length || playing) return;
+    playing = true;
+    const beat = 60 / Number($('bpm').value);
+    const bar = beat * 4;
+    state.chords.forEach((c,i) => {
+      for (let b=0;b<2;b++) playChord(c.tok, i*bar + b*beat*2);
+      setTimeout(()=>flash(i, bar*1000-60), i*bar*1000);
+    });
+    setTimeout(()=>{ playing=false; }, state.chords.length*bar*1000);
+  }
+
+  // ---- saved ----
+  const STORE = 'chord-gacha-saved';
+  function loadSaved(){ try { return JSON.parse(localStorage.getItem(STORE)||'[]'); } catch(e){ return []; } }
+  function writeSaved(list){ try { localStorage.setItem(STORE, JSON.stringify(list)); return true; } catch(e){ return false; } }
+  let saved = loadSaved();
+
+  function progText(){ return state.chords.map(c => chordName(c.tok, state.key)).join(' → '); }
+
+  function save(){
+    if (!state.chords.length){ setStatus('先に「引く」でコード進行を出してください'); return; }
+    const item = { text: progText(), name: state.name, key: KEYS[state.key], at: new Date().toLocaleDateString('ja-JP') };
+    if (saved.some(s => s.text===item.text)){ setStatus('もうとってあります'); return; }
+    saved.unshift(item);
+    const ok = writeSaved(saved);
+    renderSaved();
+    setStatus(ok ? 'とっておきました' : 'この画面を閉じるまでは残ります（保存領域が使えませんでした）');
+  }
+
+  function renderSaved(){
+    const ul = $('savedList'); ul.innerHTML='';
+    if (!saved.length){ const li=document.createElement('li'); li.className='empty'; li.textContent='まだありません。気に入った進行を「とっておく」と、ここに溜まります。'; ul.appendChild(li); return; }
+    saved.forEach((s,i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<div><div class="s-chords"></div><div class="s-meta"></div></div><div class="s-btns"><button data-a="copy">コピー</button><button data-a="del">消す</button></div>`;
+      li.querySelector('.s-chords').textContent = s.text;
+      li.querySelector('.s-meta').textContent = `${s.name}／キー ${s.key}／${s.at}`;
+      li.querySelector('[data-a=copy]').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(s.text); setStatus('コピーしました'); }
+        catch(e){ setStatus('コピーできませんでした。長押しで選択してください'); }
+      });
+      li.querySelector('[data-a=del]').addEventListener('click', () => { saved.splice(i,1); writeSaved(saved); renderSaved(); setStatus('消しました'); });
+      ul.appendChild(li);
+    });
+  }
+
+  function setStatus(t){ $('status').textContent = t; }
+
+  $('draw').addEventListener('click', draw);
+  $('twist').addEventListener('click', () => { if(!state.chords.length){ setStatus('先に「引く」でコード進行を出してください'); return; } twist(); });
+  $('play').addEventListener('click', () => { if(!state.chords.length){ setStatus('先に「引く」でコード進行を出してください'); return; } playAll(); });
+  $('save').addEventListener('click', save);
+  $('bpm').addEventListener('input', e => $('bpmVal').textContent = e.target.value);
+  keySel.addEventListener('change', () => { state.key = Number(keySel.value); if(state.chords.length) render(); });
+
+  render(); renderSaved();
+})();
+</script>
+</body>
+</html>
